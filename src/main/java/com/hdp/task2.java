@@ -19,7 +19,7 @@ public class task2 {
                 throws java.io.IOException, InterruptedException {
             Matcher matcher = logPattern.matcher(value.toString());
             if (matcher.find()) {
-                String hour = matcher.group(3) + matcher.group(2) + matcher.group(1) + matcher.group(4); // YYYYMMMDDHH
+                String hour = matcher.group(3) + matcher.group(2) + matcher.group(1) + matcher.group(4);
                 context.write(new Text(hour), new IntWritable(1));
             }
         }
@@ -85,31 +85,98 @@ public class task2 {
         }
     }
 
+    public static class HashPartitioner extends Partitioner<Text, IntWritable> {
+        public int getPartition(Text key, IntWritable value, int numPartitions) {
+            return Math.abs(key.hashCode()) % numPartitions;
+        }
+    }
+
+    public static class SwapMapper extends Mapper<LongWritable, Text, LongWritable, Text> {
+        public void map(LongWritable key, Text value, Context context)
+                throws java.io.IOException, InterruptedException {
+            String[] parts = value.toString().split("\t");
+            if (parts.length == 2) {
+                long count = Long.parseLong(parts[1]);
+                context.write(new LongWritable(count), new Text(parts[0]));
+            }
+        }
+    }
+
+    public static class DescendingKeyComparator extends WritableComparator {
+        protected DescendingKeyComparator() {
+            super(LongWritable.class, true);
+        }
+
+        @Override
+        public int compare(WritableComparable a, WritableComparable b) {
+            return -super.compare(a, b); // 降序排序
+        }
+    }
+
+    public static class OutputReducer extends Reducer<LongWritable, Text, Text, LongWritable> {
+        public void reduce(LongWritable key, Iterable<Text> values, Context context)
+                throws java.io.IOException, InterruptedException {
+            for (Text val : values) {
+                context.write(val, key);
+            }
+        }
+    }
+
     public static void main(String[] args) throws Exception {
         Configuration conf = new Configuration();
 
-        // job 1: 每小时访问统计
         Job job1 = Job.getInstance(conf, "Hourly Access Count");
         job1.setJarByClass(task2.class);
         job1.setMapperClass(HourMapper.class);
         job1.setCombinerClass(SumReducer.class);
         job1.setReducerClass(SumReducer.class);
+        job1.setPartitionerClass(HashPartitioner.class);
+        job1.setNumReduceTasks(4);
         job1.setOutputKeyClass(Text.class);
         job1.setOutputValueClass(IntWritable.class);
         FileInputFormat.addInputPath(job1, new Path(args[0]));
         FileOutputFormat.setOutputPath(job1, new Path(args[1] + "_hour"));
         job1.waitForCompletion(true);
 
-        // job 2: 用户端统计
         Job job2 = Job.getInstance(conf, "User Agent Count");
         job2.setJarByClass(task2.class);
         job2.setMapperClass(UserAgentMapper.class);
         job2.setCombinerClass(SumReducer.class);
         job2.setReducerClass(SumReducer.class);
+        job2.setPartitionerClass(HashPartitioner.class);
+        job2.setNumReduceTasks(4);
         job2.setOutputKeyClass(Text.class);
         job2.setOutputValueClass(IntWritable.class);
         FileInputFormat.addInputPath(job2, new Path(args[0]));
         FileOutputFormat.setOutputPath(job2, new Path(args[1] + "_agent"));
-        System.exit(job2.waitForCompletion(true) ? 0 : 1);
+        job2.waitForCompletion(true);
+
+        // === Job3: Sort Hour Access Count ===
+        Job sortHour = Job.getInstance(conf, "Sort Hourly Count Descending");
+        sortHour.setJarByClass(task2.class);
+        sortHour.setMapperClass(SwapMapper.class);
+        sortHour.setReducerClass(OutputReducer.class);
+        sortHour.setSortComparatorClass(DescendingKeyComparator.class);
+        sortHour.setMapOutputKeyClass(LongWritable.class);
+        sortHour.setMapOutputValueClass(Text.class);
+        sortHour.setOutputKeyClass(Text.class);
+        sortHour.setOutputValueClass(LongWritable.class);
+        FileInputFormat.addInputPath(sortHour, new Path(args[1] + "_hour"));
+        FileOutputFormat.setOutputPath(sortHour, new Path(args[1] + "_hour_sorted"));
+        sortHour.waitForCompletion(true);
+
+        // === Job4: Sort User Agent Count ===
+        Job sortAgent = Job.getInstance(conf, "Sort UserAgent Count Descending");
+        sortAgent.setJarByClass(task2.class);
+        sortAgent.setMapperClass(SwapMapper.class);
+        sortAgent.setReducerClass(OutputReducer.class);
+        sortAgent.setSortComparatorClass(DescendingKeyComparator.class);
+        sortAgent.setMapOutputKeyClass(LongWritable.class);
+        sortAgent.setMapOutputValueClass(Text.class);
+        sortAgent.setOutputKeyClass(Text.class);
+        sortAgent.setOutputValueClass(LongWritable.class);
+        FileInputFormat.addInputPath(sortAgent, new Path(args[1] + "_agent"));
+        FileOutputFormat.setOutputPath(sortAgent, new Path(args[1] + "_agent_sorted"));
+        System.exit(sortAgent.waitForCompletion(true) ? 0 : 1);
     }
 }
