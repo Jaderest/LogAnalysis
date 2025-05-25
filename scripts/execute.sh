@@ -55,16 +55,18 @@ task3_2() {
 }
 
 task3_3() {
-    rm -r ./task3_3
+    rm -r ./task3_3*
     hdfs dfs -rm -r /user/lab/task3_3 > /dev/null 2>&1
+    hdfs dfs -rm -r /user/lab/task3_3_sorted > /dev/null 2>&1
     hadoop jar ./target/log_analysis-1.0.jar com.hdp.task3_part3 /user/lab/dataset /user/lab/task3_3 /user/lab/task2_agent_sorted/part-r-00000
     hdfs dfs -get /user/lab/task3_3
+    hdfs dfs -get /user/lab/task3_3_sorted
 }
 
-task4() {
-    hdfs dfs -rm -r /user/lab/task4 > /dev/null 2>&1
-    hadoop jar ./target/log_analysis-1.0.jar com.hdp.task4 /user/lab/dataset /user/lab/task4
-    hdfs dfs -get /user/lab/task4
+task4_1() {
+    hdfs dfs -rm -r /user/lab/task4_1 > /dev/null 2>&1
+    hadoop jar ./target/log_analysis-1.0.jar com.hdp.task4_part1 /user/lab/dataset /user/lab/task4_1
+    hdfs dfs -get /user/lab/task4_1
 }
 
 
@@ -96,8 +98,11 @@ case "$1" in
     "3_3")
         task3_3
         ;;
-    "4")
-        task4
+    "4-1")
+        task4_1
+        ;;
+    "4_1")
+        task4_1
         ;;
     *)
         exit 1
