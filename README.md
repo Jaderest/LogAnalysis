@@ -8,3 +8,9 @@ mvn clean package
 
 # 在target中可以找到jar包
 ```
+
+## 运行方式
+```
+hadoop jar <jar path> com.hdp.task<1|2> <input> <output>
+
+```
