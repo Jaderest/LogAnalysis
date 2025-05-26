@@ -28,7 +28,7 @@ public class task4_part1 {
             if (matcher.find()) {
                 String remoteAddr = matcher.group(1); // 获取IP地址
                 String timeLocal = matcher.group(4); // 获取时间
-                String requestType = matcher.group(5); // 获取请求内容
+                String requestType = matcher.group(5); // 获取请求种类
                 String bytesSended = matcher.group(8); // 获取发送的字节数
                 String userAgent = matcher.group(10); // 获取浏览器信息
 
@@ -71,20 +71,6 @@ public class task4_part1 {
                 return (hour >= 6 && hour <= 18) ? "day" : "night";
             } catch (ParseException e) {
                 throw new IOException("Invalid time format: " + timeLocal);
-            }
-        }
-
-        private String classifyRequest(String request) {
-            if (request.contains("GET")) {
-                return "GET";
-            } else if (request.contains("POST")) {
-                return "POST";
-            } else if (request.contains("PUT")) {
-                return "PUT";
-            } else if (request.contains("DELETE")) {
-                return "DELETE";
-            } else {
-                return "OTHER";
             }
         }
     }

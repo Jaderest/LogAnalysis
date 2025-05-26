@@ -72,6 +72,13 @@ task4_1() {
     hdfs dfs -get /user/lab/task4_1
 }
 
+task4_2() {
+    rm -r ./task4_2*
+    hdfs dfs -rm -r /user/lab/task4_2 > /dev/null 2>&1
+    hadoop jar ./target/log_analysis-1.0.jar com.hdp.task4_part2 /user/lab/task4_1 /user/lab/task4_2
+    hdfs dfs -get /user/lab/task4_2
+}
+
 
 case "$1" in
     "1")
@@ -106,6 +113,12 @@ case "$1" in
         ;;
     "4_1")
         task4_1
+        ;;
+    "4-2")
+        task4_2
+        ;;
+    "4_2")
+        task4_2
         ;;
     *)
         exit 1
