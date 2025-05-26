@@ -26,8 +26,11 @@ public class task4_part1 {
             Matcher matcher = logPattern.matcher(value.toString());
             if (matcher.find()) {
                 String remoteAddr = matcher.group(1); // 获取IP地址
-                String userAgent = matcher.group(9); // 获取浏览器信息
                 String timeLocal = matcher.group(4); // 获取时间
+                String request = matcher.group(5); // 获取请求内容
+                String requestType = classifyRequest(request); // 获取请求类型
+                String bytesSended = matcher.group(7); // 获取发送的字节数
+                String userAgent = matcher.group(9); // 获取浏览器信息
                 
                 // 判断是PC端还是移动端
                 String deviceType = classifyDevice(userAgent);
@@ -38,7 +41,9 @@ public class task4_part1 {
                 // 根据IP地址作为Key，输出特征向量
                 StringBuilder featureVector = new StringBuilder();
                 featureVector.append("device:").append(deviceType).append(" ");
-                featureVector.append("timeOfDay:").append(timeOfDay);
+                featureVector.append("timeOfDay:").append(timeOfDay).append(" ");
+                featureVector.append("bytesSent:").append(bytesSended).append(" ");
+                featureVector.append("requestType:").append(requestType);
                 
                 context.write(new Text(remoteAddr), new Text(featureVector.toString()));
             }
@@ -64,11 +69,29 @@ public class task4_part1 {
                 throw new IOException("Invalid time format: " + timeLocal);
             }
         }
+
+        private String classifyRequest(String request) {
+            if (request.contains("GET")) {
+                return "GET";
+            } else if (request.contains("POST")) {
+                return "POST";
+            } else if (request.contains("PUT")) {
+                return "PUT";
+            } else if (request.contains("DELETE")) {
+                return "DELETE";
+            } else {
+                return "OTHER";
+            }
+        }
+
+
     }
 
     public static class LogReducer extends Reducer<Text, Text, Text, NullWritable> {
         public void reduce(Text key, Iterable<Text> values, Context context)
                 throws java.io.IOException, InterruptedException {
+            //TODO：在特征向量中，添加统计用户请求次数的数据结构，并且在Reduce中输出
+            //TODO：添加平均发送数据量
             // 输出每个用户的特征向量
             for (Text val : values) {
                 context.write(val, NullWritable.get());

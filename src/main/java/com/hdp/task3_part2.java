@@ -11,7 +11,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.regex.*;
 
-// Task3 Part2: 添加排序功能
+// Task3 Part2
 public class task3_part2 {
 
     public static class LogMapper extends Mapper<LongWritable, Text, Text, IntWritable> {

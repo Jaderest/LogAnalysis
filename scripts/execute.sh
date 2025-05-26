@@ -2,10 +2,12 @@
 
 mvn clean package -DskipTests > /dev/null 2>&1
 
-hdfs dfs -mkdir -p /user
-hdfs dfs -mkdir -p /user/lab
+hdfs dfs -mkdir -p /user > /dev/null 2>&1
+hdfs dfs -mkdir -p /user/lab > /dev/null 2>&1
+hdfs dfs -mkdir -p /user/lab/dataset > /dev/null 2>&1
 
 task1() {
+    rm -r ./task1*
     hdfs dfs -rm -r /user/lab/task1 > /dev/null 2>&1
     hadoop jar ./target/log_analysis-1.0.jar com.hdp.task1 /user/lab/dataset /user/lab/task1
     hdfs dfs -get /user/lab/task1
@@ -64,6 +66,7 @@ task3_3() {
 }
 
 task4_1() {
+    rm -r ./task4_1*
     hdfs dfs -rm -r /user/lab/task4_1 > /dev/null 2>&1
     hadoop jar ./target/log_analysis-1.0.jar com.hdp.task4_part1 /user/lab/dataset /user/lab/task4_1
     hdfs dfs -get /user/lab/task4_1
