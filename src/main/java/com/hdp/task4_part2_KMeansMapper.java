@@ -13,8 +13,8 @@ public class task4_part2_KMeansMapper extends Mapper<Object, Text, IntWritable, 
 
     @Override
     protected void setup(Context context) throws IOException, InterruptedException {
-        centers.add(new ClusterCenter(0, new double[] { 1.0, 1.0 }));
-        centers.add(new ClusterCenter(1, new double[] { 5.0, 5.0 }));
+        centers.add(new ClusterCenter(0, new double[] { 10.0, 500.0, 8.0, 400.0 }));
+        centers.add(new ClusterCenter(1, new double[] { 20.0, 1500.0, 30.0, 1300.0 }));
     }
 
     @Override
@@ -24,16 +24,17 @@ public class task4_part2_KMeansMapper extends Mapper<Object, Text, IntWritable, 
         try {
             String ip = fields[0];
 
-            // 提取冒号后的数值并转成 double
+            // 新的特征向量提取
+            double dayRequests = extractDouble(fields[3]);
             double dayAvgBytesSent = extractDouble(fields[4]);
+            double nightRequests = extractDouble(fields[5]);
             double nightAvgBytesSent = extractDouble(fields[6]);
-            double totalAvgBytesSent = extractDouble(fields[7]);
 
-            double[] point = { dayAvgBytesSent, nightAvgBytesSent };
+            double[] point = { dayRequests, dayAvgBytesSent, nightRequests, nightAvgBytesSent };
 
+            // 计算距离并选择最近的中心
             int closestClusterId = -1;
             double minDistance = Double.MAX_VALUE;
-
             for (ClusterCenter center : centers) {
                 double distance = computeEuclideanDistance(point, center.getCenter());
                 if (distance < minDistance) {
@@ -42,11 +43,12 @@ public class task4_part2_KMeansMapper extends Mapper<Object, Text, IntWritable, 
                 }
             }
 
+            // 输出格式：IP,4个值,1
             context.write(new IntWritable(closestClusterId),
-                    new Text(ip + "," + dayAvgBytesSent + "," + nightAvgBytesSent + "," + totalAvgBytesSent + ",1"));
+                    new Text(ip + "," + dayRequests + "," + dayAvgBytesSent + "," + nightRequests + ","
+                            + nightAvgBytesSent + ",1"));
 
         } catch (Exception e) {
-            // 打印出错行内容方便调试
             System.err.println("Skipping line due to error: " + value.toString());
             e.printStackTrace();
         }

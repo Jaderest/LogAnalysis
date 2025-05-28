@@ -8,32 +8,32 @@ import java.io.IOException;
 
 public class task4_part2_KMeansReducer extends Reducer<IntWritable, Text, IntWritable, Text> {
 
-    @Override
-    public void reduce(IntWritable key, Iterable<Text> values, Context context) throws IOException, InterruptedException {
-        double[] sum = new double[3]; // 聚类中心
+    public void reduce(IntWritable key, Iterable<Text> values, Context context)
+            throws IOException, InterruptedException {
+        double[] sum = new double[4];
         int count = 0;
 
-        // 聚合数据点
         for (Text val : values) {
             String[] fields = val.toString().split(",");
-            double dayAvgBytesSent = Double.parseDouble(fields[0]);
-            double nightAvgBytesSent = Double.parseDouble(fields[1]);
-            double totalAvgBytesSent = Double.parseDouble(fields[2]);
-            int frequency = Integer.parseInt(fields[3]);
+            double dayReq = Double.parseDouble(fields[0]);
+            double dayAvg = Double.parseDouble(fields[1]);
+            double nightReq = Double.parseDouble(fields[2]);
+            double nightAvg = Double.parseDouble(fields[3]);
+            int freq = Integer.parseInt(fields[4]);
 
-            sum[0] += dayAvgBytesSent * frequency;
-            sum[1] += nightAvgBytesSent * frequency;
-            sum[2] += totalAvgBytesSent * frequency;
-            count += frequency;
+            sum[0] += dayReq * freq;
+            sum[1] += dayAvg * freq;
+            sum[2] += nightReq * freq;
+            sum[3] += nightAvg * freq;
+            count += freq;
         }
 
-        // 计算新的聚类中心
-        double[] newCenter = new double[3];
-        newCenter[0] = sum[0] / count;
-        newCenter[1] = sum[1] / count;
-        newCenter[2] = sum[2] / count;
+        double[] newCenter = new double[4];
+        for (int i = 0; i < 4; i++)
+            newCenter[i] = sum[i] / count;
 
-        // 输出新的聚类中心
-        context.write(key, new Text(newCenter[0] + "," + newCenter[1] + "," + newCenter[2] + "," + count));
+        context.write(key,
+                new Text(newCenter[0] + "," + newCenter[1] + "," + newCenter[2] + "," + newCenter[3] + "," + count));
     }
+
 }
