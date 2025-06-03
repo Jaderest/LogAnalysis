@@ -15,6 +15,7 @@ public class task4_part2_KMeansCombiner extends Reducer<IntWritable, Text, IntWr
         int count = 0;
 
         for (Text val : values) {
+            // 读取Mapper传来的数据，求均值
             String[] fields = val.toString().split(",");
             double dayReq = Double.parseDouble(fields[1]);
             double dayAvg = Double.parseDouble(fields[2]);
@@ -29,6 +30,7 @@ public class task4_part2_KMeansCombiner extends Reducer<IntWritable, Text, IntWr
             count += freq;
         }
 
+        // 计算新的中心点
         double[] newCenter = new double[4];
         for (int i = 0; i < 4; i++)
             newCenter[i] = sum[i] / count;

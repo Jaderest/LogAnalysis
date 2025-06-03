@@ -3,36 +3,52 @@ package com.hdp;
 import org.apache.hadoop.io.*;
 import org.apache.hadoop.mapreduce.*;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.io.*;
+import java.util.*;
 
 public class task4_part2_KMeansMapper extends Mapper<Object, Text, IntWritable, Text> {
 
     private static List<ClusterCenter> centers = new ArrayList<>();
-
-    @Override
-    protected void setup(Context context) throws IOException, InterruptedException {
-        centers.add(new ClusterCenter(0, new double[] { 10.0, 500.0, 8.0, 400.0 }));
-        centers.add(new ClusterCenter(1, new double[] { 20.0, 1500.0, 30.0, 1300.0 }));
-    }
+    private static int initializedCount = 0;
+    private static boolean centersInitialized = false;
 
     @Override
     public void map(Object key, Text value, Context context) throws IOException, InterruptedException {
         String[] fields = value.toString().split("\t");
+        if (fields.length < 7) return;
 
         try {
             String ip = fields[0];
 
-            // 新的特征向量提取
+            // 提取原始值
             double dayRequests = extractDouble(fields[3]);
             double dayAvgBytesSent = extractDouble(fields[4]);
             double nightRequests = extractDouble(fields[5]);
             double nightAvgBytesSent = extractDouble(fields[6]);
 
-            double[] point = { dayRequests, dayAvgBytesSent, nightRequests, nightAvgBytesSent };
+            // 原始向量
+            double[] raw = new double[] { dayRequests, dayAvgBytesSent, nightRequests, nightAvgBytesSent };
 
-            // 计算距离并选择最近的中心
+            // 简单归一化（除以经验最大值）
+            double[] point = new double[] {
+                raw[0] / 1000.0,   // dayReq
+                raw[1] / 20000.0,  // dayAvgBytesSent
+                raw[2] / 1000.0,   // nightReq
+                raw[3] / 20000.0   // nightAvgBytesSent
+            };
+
+            // 初始化中心（前两个点）
+            if (!centersInitialized && initializedCount < 3) {
+                centers.add(new ClusterCenter(initializedCount, point.clone()));
+                initializedCount++;
+                if (initializedCount == 3) {
+                    centersInitialized = true;
+                }
+            }
+
+            if (!centersInitialized) return; // 等待中心初始化完成
+
+            // 距离比较
             int closestClusterId = -1;
             double minDistance = Double.MAX_VALUE;
             for (ClusterCenter center : centers) {
@@ -43,14 +59,12 @@ public class task4_part2_KMeansMapper extends Mapper<Object, Text, IntWritable, 
                 }
             }
 
-            // 输出格式：IP,4个值,1
+            // 输出格式：原始值+1
             context.write(new IntWritable(closestClusterId),
-                    new Text(ip + "," + dayRequests + "," + dayAvgBytesSent + "," + nightRequests + ","
-                            + nightAvgBytesSent + ",1"));
+                new Text(ip + "," + raw[0] + "," + raw[1] + "," + raw[2] + "," + raw[3] + ",1"));
 
         } catch (Exception e) {
-            System.err.println("Skipping line due to error: " + value.toString());
-            e.printStackTrace();
+            System.err.println("Skipping line: " + value.toString());
         }
     }
 
@@ -59,30 +73,24 @@ public class task4_part2_KMeansMapper extends Mapper<Object, Text, IntWritable, 
         return Double.parseDouble(parts.length > 1 ? parts[1] : parts[0]);
     }
 
-    private double computeEuclideanDistance(double[] point, double[] center) {
+    private double computeEuclideanDistance(double[] a, double[] b) {
         double sum = 0;
-        for (int i = 0; i < point.length; i++) {
-            sum += Math.pow(point[i] - center[i], 2);
+        for (int i = 0; i < a.length; i++) {
+            sum += Math.pow(a[i] - b[i], 2);
         }
         return Math.sqrt(sum);
     }
 
-    // 聚类中心类
     public static class ClusterCenter {
         private int clusterId;
         private double[] center;
 
-        public ClusterCenter(int clusterId, double[] center) {
-            this.clusterId = clusterId;
-            this.center = center;
+        public ClusterCenter(int id, double[] c) {
+            this.clusterId = id;
+            this.center = c;
         }
 
-        public int getClusterId() {
-            return clusterId;
-        }
-
-        public double[] getCenter() {
-            return center;
-        }
+        public int getClusterId() { return clusterId; }
+        public double[] getCenter() { return center; }
     }
 }
