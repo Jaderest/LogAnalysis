@@ -33,7 +33,7 @@ public class task4_part2_KMeansReducer extends Reducer<IntWritable, Text, IntWri
             newCenter[i] = sum[i] / count;
 
         context.write(key,
-                new Text(newCenter[0] + ", " + newCenter[1] + ", " + newCenter[2] + ", " + newCenter[3] + ", " + count));
+                new Text(newCenter[0] + ",\t" + newCenter[1] + ",\t" + newCenter[2] + ",\t" + newCenter[3] + ",\t" + count));
     }
 
 }

@@ -38,10 +38,10 @@ public class task4_part2_KMeansMapper extends Mapper<Object, Text, IntWritable, 
             };
 
             // 初始化中心（前两个点）
-            if (!centersInitialized && initializedCount < 3) {
+            if (!centersInitialized && initializedCount < 4) {
                 centers.add(new ClusterCenter(initializedCount, point.clone()));
                 initializedCount++;
-                if (initializedCount == 3) {
+                if (initializedCount == 4) {
                     centersInitialized = true;
                 }
             }
